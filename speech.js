@@ -73,25 +73,6 @@ export function speak(text, onEnd) {
   TTS.speak(u);
   return true;
 }
-// texts[start]부터 차례로. null/빈 항목은 건너뜀. 정상 종료만 다음으로 이어감.
-export function speakList(texts, start, { onIndex, onDone }) {
-  if (!TTS) return false;
-  const my = ++token;
-  TTS.cancel();
-  let i = start;
-  const next = () => {
-    if (my !== token) return;
-    while (i < texts.length && !texts[i]) i++;
-    if (i >= texts.length) { onDone(); return; }
-    onIndex(i);
-    const u = utter(texts[i]);
-    u.onend = () => { if (my !== token) return; i++; next(); };
-    u.onerror = () => { if (my === token) onDone(); };
-    TTS.speak(u);
-  };
-  next();
-  return true;
-}
 export function stopSpeaking() {
   token++;
   if (TTS) TTS.cancel();

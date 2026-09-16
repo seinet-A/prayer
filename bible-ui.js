@@ -1,21 +1,9 @@
-import { $, show, onLeave } from './ui.js';
+import { $, show } from './ui.js';
 import * as B from './bible.js';
-import * as V from './speech.js';
 
 let index = null;
 let cur = null;        // { book, chapter }
 let data = null;       // { chapters, titles }
-let verse = 1;
-let reading = false;
-let following = true;
-
-function setReading(on) {
-  reading = on;
-  $('readCh').textContent = on ? '멈춤' : '읽어주기';
-}
-onLeave.push(() => { if (reading) { V.stopSpeaking(); setReading(false); } });
-window.addEventListener('wheel', () => { following = false; }, { passive: true });
-window.addEventListener('touchmove', () => { following = false; }, { passive: true });
 
 export async function updateResume() {
   try { index = await B.loadIndex(); } catch { $('toResume').textContent = '성경 읽기'; return; }
@@ -47,9 +35,8 @@ function openChapters(book) {
   show('chapters');
 }
 
-async function openChapter(book, chapter, startVerse) {
+async function openChapter(book, chapter, verse) {
   cur = { book, chapter };
-  verse = startVerse;
   $('readerTitle').textContent = B.chapterTitle(index, book, chapter);
   $('readerMsg').textContent = '';
   $('verses').innerHTML = '';
@@ -66,42 +53,22 @@ async function openChapter(book, chapter, startVerse) {
     p.dataset.v = i + 1;
     const n = document.createElement('span'); n.className = 'num'; n.textContent = i + 1;
     p.append(n, t || '(본문 준비 중)');
-    if (t) p.addEventListener('click', () => readFrom(i + 1));
+    // 절을 누르면 "여기까지 읽었어요" 표시. 다음에 「이어서 읽기」로 열면 이 절로 온다.
+    p.addEventListener('click', () => mark(i + 1));
     box.append(p);
   });
   $('prevCh').disabled = !B.prevChapter(index, book, chapter);
   $('nextCh').disabled = !B.nextChapter(index, book, chapter);
-  B.saveLast(localStorage, { book, chapter, verse });
-  setReading(false);
-  highlight(verse, false);
-  if (verse > 1) scrollToVerse(verse);
+  mark(verse);
+  if (verse > 1) document.querySelector(`.verse[data-v="${verse}"]`)?.scrollIntoView({ block: 'center' });
 }
 
-function highlight(v, scroll) {
+function mark(v) {
   document.querySelectorAll('.verse.now').forEach(p => p.classList.remove('now'));
-  const p = document.querySelector(`.verse[data-v="${v}"]`);
-  if (p && v > 1) p.classList.add('now');
-  if (scroll && following) scrollToVerse(v);
-}
-function scrollToVerse(v) {
-  document.querySelector(`.verse[data-v="${v}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  if (v > 1) document.querySelector(`.verse[data-v="${v}"]`)?.classList.add('now');
+  B.saveLast(localStorage, { ...cur, verse: v });
 }
 
-function readFrom(v) {
-  following = true;
-  const texts = data.chapters[cur.chapter - 1];
-  const ok = V.speakList(texts, v - 1, {
-    onIndex(i) { verse = i + 1; highlight(verse, true); B.saveLast(localStorage, { ...cur, verse }); },
-    onDone() { setReading(false); },
-  });
-  if (!ok) { $('readerMsg').textContent = '이 기기는 읽어주기가 안 돼요'; return; }
-  setReading(true);
-}
-
-$('readCh').addEventListener('click', () => {
-  if (reading) { V.stopSpeaking(); setReading(false); B.saveLast(localStorage, { ...cur, verse }); }
-  else readFrom(verse);
-});
 $('prevCh').addEventListener('click', () => { const p = B.prevChapter(index, cur.book, cur.chapter); if (p) openChapter(p.book, p.chapter, 1); });
 $('nextCh').addEventListener('click', () => { const n = B.nextChapter(index, cur.book, cur.chapter); if (n) openChapter(n.book, n.chapter, 1); });
 
