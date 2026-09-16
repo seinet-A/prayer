@@ -72,4 +72,25 @@ assert.deepEqual(spoken, ['cancel', '아멘']);
 V.stopSpeaking();
 assert.equal(spoken.at(-1), 'cancel');
 
+// 7. speakList: null 건너뜀, onend만 이어감, stop 뒤 늦은 콜백 무시
+spoken.length = 0;
+const idx = []; let done = 0;
+const fakeTTS = window.speechSynthesis;
+const utts = [];
+fakeTTS.speak = u => { spoken.push(u.text); utts.push(u); };
+V.speakList(['일', null, '삼'], 0, { onIndex: i => idx.push(i), onDone: () => done++ });
+assert.deepEqual(spoken, ['cancel', '일']);
+utts[0].onend();
+assert.deepEqual(spoken, ['cancel', '일', '삼']);
+assert.deepEqual(idx, [0, 2]);
+utts[1].onend();
+assert.equal(done, 1);
+V.speakList(['가', '나'], 1, { onIndex: i => idx.push(i), onDone: () => done++ });
+assert.equal(spoken.at(-1), '나');
+V.stopSpeaking();
+utts.at(-1).onend();           // 늦은 콜백
+assert.equal(done, 1);         // 안 늘어남
+utts.at(-1).onerror();
+assert.equal(done, 1);
+
 console.log('speech.js OK');

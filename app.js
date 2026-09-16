@@ -1,20 +1,15 @@
 import * as S from './store.js';
 import * as V from './speech.js';
+import { $, show, onLeave } from './ui.js';
 
-const $ = id => document.getElementById(id);
 let store = S.load(localStorage);
 let current = null;      // 보기 화면의 Prayer
 let base = '';           // 녹음 화면에 쌓인 확정 글
 let source = 'typed';
 
 // ---------- 화면 전환 ----------
-function show(name) {
-  document.querySelectorAll('main > section').forEach(s => { s.hidden = s.id !== name; });
-  V.stopSpeaking();
-  $('speak').textContent = '읽어주기';
-  window.scrollTo(0, 0);
-}
-document.querySelectorAll('.back').forEach(b => b.addEventListener('click', () => show('home')));
+onLeave.push(() => { V.stopSpeaking(); $('speak').textContent = '읽어주기'; });
+document.querySelectorAll('.back').forEach(b => b.addEventListener('click', () => show(b.dataset.to || 'home')));
 
 // ---------- 홈 ----------
 function renderHome() {

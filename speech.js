@@ -56,19 +56,43 @@ if (TTS) { pickVoice(); TTS.onvoiceschanged = pickVoice; }
 export function voicesLoaded() { return loaded; }
 export function hasKoreanVoice() { return !!voice; }
 
-export function speak(text, onEnd) {
-  if (!TTS) return false;
-  TTS.cancel();
+let token = 0;                      // 실행마다 올려서 이전 실행의 늦은 콜백을 무시
+function utter(text) {
   const u = new SpeechSynthesisUtterance(text);
   u.lang = 'ko-KR';
   if (voice) u.voice = voice;
   u.rate = 0.85;
-  u.onend = onEnd;
-  u.onerror = onEnd;
+  return u;
+}
+export function speak(text, onEnd) {
+  if (!TTS) return false;
+  const my = ++token;
+  TTS.cancel();
+  const u = utter(text);
+  u.onend = u.onerror = () => { if (my === token) onEnd(); };
   TTS.speak(u);
   return true;
 }
-
+// texts[start]부터 차례로. null/빈 항목은 건너뜀. 정상 종료만 다음으로 이어감.
+export function speakList(texts, start, { onIndex, onDone }) {
+  if (!TTS) return false;
+  const my = ++token;
+  TTS.cancel();
+  let i = start;
+  const next = () => {
+    if (my !== token) return;
+    while (i < texts.length && !texts[i]) i++;
+    if (i >= texts.length) { onDone(); return; }
+    onIndex(i);
+    const u = utter(texts[i]);
+    u.onend = () => { if (my !== token) return; i++; next(); };
+    u.onerror = () => { if (my === token) onDone(); };
+    TTS.speak(u);
+  };
+  next();
+  return true;
+}
 export function stopSpeaking() {
+  token++;
   if (TTS) TTS.cancel();
 }
