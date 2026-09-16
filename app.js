@@ -2,11 +2,14 @@ import * as S from './store.js';
 import * as V from './speech.js';
 import { $, show, onLeave } from './ui.js';
 import { updateResume, autoPrepare } from './bible-ui.js';
+import * as C from './commands.js';
 
 const REFINE_URL = '';   // Cloudflare Worker 주소. 비어 있으면 「다듬기」 숨김.
 let store = S.load(localStorage);
 let current = null;      // 보기 화면의 Prayer
-let base = '';           // 녹음 화면에 쌓인 확정 글
+let clauses = [];        // 녹음 화면에 쌓인 구절들
+let removeIdx = -1;      // 빼기 확인 중인 구절 번호
+let afterStop = null;    // 인식이 멈춘 뒤 할 일: 'confirm' | 'remove'
 let source = 'typed';
 
 // ---------- 화면 전환 ----------
@@ -33,11 +36,24 @@ function renderHome() {
   show('home');
 }
 $('toSettings').addEventListener('click', () => show('settings'));
-$('toRecord').addEventListener('click', () => { base = ''; resetRecord(); show('record'); });
+$('toRecord').addEventListener('click', () => { clauses = []; resetRecord(); show('record'); });
 
 // ---------- 녹음 ----------
+function renderLive(interim = '') {
+  const box = $('live');
+  box.innerHTML = '';
+  clauses.forEach((c, i) => {
+    const p = document.createElement('p');
+    p.className = 'clause' + (i === removeIdx ? ' gone' : '');
+    p.textContent = c;
+    box.append(p);
+  });
+  if (interim) { const p = document.createElement('p'); p.className = 'clause interim'; p.textContent = interim; box.append(p); }
+}
 function resetRecord() {
-  $('live').textContent = base;
+  removeIdx = -1;
+  afterStop = null;
+  renderLive();
   $('typed').value = '';
   setRecState('idle');
 }
@@ -45,19 +61,36 @@ function setRecState(state, detail) {
   const mic = $('mic');
   mic.classList.toggle('listening', state === 'listening');
   mic.textContent = state === 'listening' ? '그만' : '말하기';
-  mic.hidden = state === 'typed';
-  $('pausedRow').hidden = state !== 'paused';
+  mic.hidden = state === 'typed' || state === 'remove';
+  $('pausedRow').hidden = state !== 'paused' && state !== 'notfound';
+  $('removeRow').hidden = state !== 'remove';
   $('typedBox').hidden = state !== 'typed';
   const msg = {
-    idle: ['', '버튼을 누르고 말씀하세요'],
+    idle: ['', '버튼을 누르고 말씀하세요. "됐어요"라고 하면 끝나요'],
     requesting: ['마이크 사용을 허락해 주세요', ''],
-    listening: ['듣고 있어요', '다 말씀하시면 「그만」을 누르세요'],
+    listening: ['듣고 있어요', '다 말씀하시면 「그만」을 누르거나 "됐어요"라고 하세요'],
     finishing: ['정리하고 있어요', ''],
     paused: ['잠시 멈췄어요', '더 말씀하시려면 「이어서 말하기」'],
+    remove: ['이 부분을 뺄까요?', ''],
+    notfound: ['어느 부분인지 못 찾았어요', '이어서 말씀하시거나, 저장 전에 글에서 고쳐 주세요'],
     typed: [detail || '', '다 적으면 아래 버튼을 누르세요'],
   }[state] || ['', ''];
   $('recStatus').textContent = msg[0];
   $('recHint').textContent = msg[1];
+}
+// 인식을 멈추고, 멈춘 뒤 what을 한다. iOS가 onend를 안 주면 3초 뒤 강제로.
+function stopFor(what) {
+  afterStop = what;
+  setRecState('finishing');
+  V.stop();
+  finishTimer = setTimeout(onStopped, 3000);
+}
+function onStopped() {
+  clearTimeout(finishTimer);
+  const what = afterStop;
+  afterStop = null;
+  if (what === 'remove') setRecState(removeIdx >= 0 ? 'remove' : 'notfound');
+  else if (what === 'confirm') goConfirm();
 }
 function showTyped(reason) {
   source = 'typed';
@@ -68,14 +101,22 @@ let finishTimer = null;
 function startListening() {
   if (!V.canListen) { showTyped('이 기기는 음성 인식이 안 돼요. 대신 적어 주세요'); return; }
   source = 'speech';
-  let finals = '';
+  removeIdx = -1;
   V.start({
-    onText(f, interim) { finals = f; $('live').textContent = base + finals + interim; },
-    onState(state, detail) {
+    onText(fresh, interim) {
+      if (afterStop) return;                       // 멈추는 중에 온 결과는 무시
+      for (const seg of fresh) {
+        const r = C.ingest(clauses, seg);
+        clauses = r.clauses;
+        if (r.action?.type === 'end') { renderLive(); stopFor('confirm'); return; }
+        if (r.action?.type === 'remove') { removeIdx = r.action.index; renderLive(); stopFor('remove'); return; }
+      }
+      renderLive(interim);
+    },
+    onState(state) {
       if (state === 'listening' || state === 'requesting') { setRecState(state); return; }
-      clearTimeout(finishTimer);
-      base += finals; finals = '';
-      $('live').textContent = base;
+      renderLive();
+      if (afterStop) { onStopped(); return; }
       if (state === 'paused') setRecState('paused');
       else if (state === 'done') goConfirm();
       else if (state === 'denied') showTyped('마이크를 쓸 수 없어요. 대신 적어 주세요');
@@ -83,23 +124,20 @@ function startListening() {
     },
   });
 }
-function stopListening() {
-  setRecState('finishing');
-  V.stop();
-  // iOS가 onend를 안 주는 경우 대비
-  finishTimer = setTimeout(goConfirm, 3000);
-}
 $('mic').addEventListener('click', () => {
-  if ($('mic').classList.contains('listening')) stopListening();
+  if ($('mic').classList.contains('listening')) stopFor('confirm');
   else startListening();
 });
 $('resume').addEventListener('click', startListening);
 $('finish').addEventListener('click', goConfirm);
-$('typedDone').addEventListener('click', () => { base = $('typed').value; goConfirm(); });
+$('removeYes').addEventListener('click', () => { if (removeIdx >= 0) clauses.splice(removeIdx, 1); removeIdx = -1; renderLive(); setRecState('paused'); });
+$('removeNo').addEventListener('click', () => { removeIdx = -1; renderLive(); setRecState('paused'); });
+$('typedDone').addEventListener('click', () => { clauses = linesOf($('typed').value); goConfirm(); });
+function linesOf(text) { return text.split('\n').map(s => s.trim()).filter(Boolean); }
 
 // ---------- 확인 ----------
 function goConfirm() {
-  $('confirmText').value = base.trim();
+  $('confirmText').value = clauses.join('\n');
   $('saveMsg').textContent = '';
   show('confirm');
 }
@@ -112,8 +150,8 @@ $('save').addEventListener('click', () => {
   store = next;
   renderHome();
 });
-$('more').addEventListener('click', () => { base = $('confirmText').value + ' '; resetRecord(); show('record'); startListening(); });
-$('redo').addEventListener('click', () => { base = ''; resetRecord(); show('record'); });
+$('more').addEventListener('click', () => { clauses = linesOf($('confirmText').value); resetRecord(); show('record'); startListening(); });
+$('redo').addEventListener('click', () => { clauses = []; resetRecord(); show('record'); });
 
 // ---------- 보기 ----------
 function renderView() {
@@ -135,22 +173,25 @@ function openView(id) {
 function updatePrayer(next) {
   try { S.save(localStorage, next); } catch { $('viewMsg').textContent = '저장하지 못했어요. 다시 눌러 주세요'; return false; }
   store = next;
-  current = store.prayers.find(p => p.id === current.id);
-  renderView();
+  if (current) current = store.prayers.find(p => p.id === current.id) || current;
+  if (current && !$('view').hidden) renderView();
   return true;
 }
 $('refine').addEventListener('click', async () => {
   if (!navigator.onLine) { $('viewMsg').textContent = '인터넷이 필요해요'; return; }
+  const id = current.id;            // 응답이 올 때 다른 기도를 보고 있어도 이 기도에 저장
+  const text = current.original;
   $('refine').disabled = true;
   $('viewMsg').textContent = '다듬는 중…';
   try {
-    const r = await fetch(REFINE_URL, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text: current.original }) });
+    const r = await fetch(REFINE_URL, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text }), signal: AbortSignal.timeout(30000) });
     if (!r.ok) throw new Error(r.status);
     const { refined } = await r.json();
     if (!refined) throw new Error('empty');
-    if (updatePrayer(S.setRefined(store, current.id, refined))) $('viewMsg').textContent = '';
+    if (!store.prayers.some(p => p.id === id)) throw new Error('gone');   // 그새 지워졌으면 버림
+    if (updatePrayer(S.setRefined(store, id, refined)) && current?.id === id) $('viewMsg').textContent = '';
   } catch {
-    $('viewMsg').textContent = '지금은 다듬을 수 없어요. 나중에 다시 해주세요';
+    if (current?.id === id) $('viewMsg').textContent = '지금은 다듬을 수 없어요. 나중에 다시 해주세요';
   }
   $('refine').disabled = false;
 });

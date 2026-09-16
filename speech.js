@@ -13,18 +13,19 @@ export function start({ onText, onState }) {
     rec.continuous = true;
     rec.interimResults = true;
   }
-  let finals = '';
+  let seenFinal = 0;   // 이미 넘긴 final 개수. iOS가 결과를 다시 보내도 중복 안 되게.
   userStopped = false;
   errored = false;
   rec.onstart = () => onState('listening');
   rec.onresult = e => {
+    const fresh = [];
     let interim = '';
-    for (let i = e.resultIndex; i < e.results.length; i++) {
+    for (let i = 0; i < e.results.length; i++) {
       const r = e.results[i];
-      if (r.isFinal) finals += r[0].transcript + ' ';
+      if (r.isFinal) { if (i >= seenFinal) { fresh.push(r[0].transcript.trim()); seenFinal = i + 1; } }
       else interim += r[0].transcript;
     }
-    onText(finals, interim);
+    onText(fresh, interim);
   };
   rec.onerror = e => {
     if (e.error === 'no-speech' || e.error === 'aborted') return; // onend가 paused로 처리

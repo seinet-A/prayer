@@ -1,6 +1,6 @@
-const CACHE = 'prayer-v2';
+const CACHE = 'prayer-v3';
 const BIBLE = 'bible-v1';
-const FILES = ['./', './index.html', './style.css', './app.js', './ui.js', './store.js', './speech.js', './bible.js', './bible-ui.js', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './bible/index.json'];
+const FILES = ['./', './index.html', './style.css', './app.js', './ui.js', './store.js', './speech.js', './commands.js', './bible.js', './bible-ui.js', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './bible/index.json'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));

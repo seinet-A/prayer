@@ -33,6 +33,18 @@ assert.equal(body.model, 'claude-opus-5');
 assert.equal(body.messages[0].content, '하나님 아버지 감사합니다');
 assert.ok(body.system.includes('바꾸지 않는다'));
 
+// 요청 전체 크기 상한 (본문을 읽기 전에 거절)
+let upstreamCalled = false;
+const big = new Request('https://w.example/', { method: 'POST', headers: { Origin: ORIGIN, 'Content-Length': '999999' }, body: JSON.stringify({ text: 'x', pad: 'y' }) });
+assert.equal((await handle(big, env, async () => { upstreamCalled = true; })).status, 413);
+assert.equal(upstreamCalled, false);
+
+// 다른 Origin에는 CORS 허용 헤더를 주지 않는다
+assert.equal((await handle(req('POST', { text: '기도' }, 'https://evil.example'), env, okUpstream('x'))).headers.get('Access-Control-Allow-Origin'), null);
+
+// 잘린 응답은 실패
+assert.equal((await handle(req('POST', { text: '기도' }), env, async () => new Response(JSON.stringify({ stop_reason: 'max_tokens', content: [{ type: 'text', text: '잘린' }] }), { status: 200 }))).status, 502);
+
 // 업스트림 오류 / 거절 / 빈 응답
 assert.equal((await handle(req('POST', { text: '기도' }), env, async () => new Response('', { status: 500 }))).status, 502);
 assert.equal((await handle(req('POST', { text: '기도' }), env, async () => new Response(JSON.stringify({ stop_reason: 'refusal', content: [] }), { status: 200 }))).status, 502);

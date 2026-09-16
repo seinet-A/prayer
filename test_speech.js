@@ -30,7 +30,8 @@ assert.deepEqual(states, ['requesting']);
 rec.onstart();
 rec.onresult(result([['하나님', false]]));
 rec.onresult(result([['하나님 아버지', true], ['감사', false]]));
-assert.deepEqual(texts, [['', '하나님'], ['하나님 아버지 ', '감사']]);
+rec.onresult(result([['하나님 아버지', true], ['감사합니다', true]]));   // iOS가 앞 결과를 다시 보냄
+assert.deepEqual(texts, [[[], '하나님'], [['하나님 아버지'], '감사'], [['감사합니다'], '']]);
 V.stop();
 assert.equal(rec.stopped, 1);
 rec.onend();
