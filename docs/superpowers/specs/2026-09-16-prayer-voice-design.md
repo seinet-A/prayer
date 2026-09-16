@@ -78,7 +78,7 @@ Store = { version: 1, prayers: Prayer[] }   // 최신이 앞
 
 - 순수 HTML/CSS/JS, 빌드 없음, 외부 라이브러리 없음.
 - 파일: `index.html`(화면 3개를 섹션으로, JS로 전환), `style.css`, `app.js`(화면·이벤트), `store.js`(저장 순수 함수), `speech.js`(음성→글, 글→음성), `manifest.webmanifest`, `sw.js`(오프라인 캐시), `icons/`.
-- 음성→글: `webkitSpeechRecognition`, `lang='ko-KR'`, `continuous=false`로 두고 사용자가 누를 때만 시작(push-to-talk). 인스턴스 하나만 재사용. final 결과만 누적. `onend`가 사용자 조작 없이 오면 "잠시 멈춤" 상태.
+- 음성→글: `webkitSpeechRecognition`, `lang='ko-KR'`, `continuous=true`, `interimResults=true`. 사용자가 누를 때 시작, 다시 누를 때 끝(push-to-talk, 자동 재시작 없음). 인스턴스 하나만 재사용. 화면에는 interim도 보여주되 저장은 final만 누적. 사용자가 끝내지 않았는데 `onend`가 오면 "잠시 멈춤" 상태.
 - `speech.js`는 `start(onText, onState)`, `stop()` 두 함수만 노출. 나중에 녹음+AI 음성인식으로 바꿔도 `app.js`는 그대로.
 - 글→음성: `speechSynthesis`, `ko-KR` 음성 선택(`voiceschanged` 대응), rate 0.85. 한국어 음성 없으면 안내. 화면 전환 시 `cancel()`.
 - 공유: `navigator.share({text})`. 미지원이면 클립보드 복사.
