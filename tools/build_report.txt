@@ -1,6 +1,7 @@
 books 66
 verses 31084
-missing 17
+missing 19
+PSA.72.20
 ISA.30.2
 ISA.48.2
 JER.21.2
@@ -18,3 +19,4 @@ ACT.15.34
 ACT.28.29
 ROM.9.2
 ROM.16.24
+2CO.13.14

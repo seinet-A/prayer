@@ -9,6 +9,8 @@ out = os.path.join(ROOT, 'bible')
 os.makedirs(out, exist_ok=True)
 
 OT = 39  # books.json 앞 39권이 구약
+# 원본에서 장의 마지막 절이 빠진 경우는 최대 절 번호로 알 수 없어 직접 적는다 (개역한글 인쇄본 기준)
+LAST_VERSE = {('PSA', 72): 20, ('2CO', 13): 14}
 verses = collections.defaultdict(dict)  # book -> {(ch, v): text}
 for key, text in src['verses'].items():
     b, c, v = key.split('.')
@@ -25,7 +27,7 @@ for i, bk in enumerate(books):
     nch = max(c for c, _ in vs)
     chapters = []
     for c in range(1, nch + 1):
-        nv = max(v for cc, v in vs if cc == c)
+        nv = max(max(v for cc, v in vs if cc == c), LAST_VERSE.get((b, c), 0))
         arr = []
         for v in range(1, nv + 1):
             t = vs.get((c, v))
