@@ -1,6 +1,7 @@
 import * as S from './store.js';
 import * as V from './speech.js';
 import { $, show, onLeave } from './ui.js';
+import { updateResume, autoPrepare } from './bible-ui.js';
 
 let store = S.load(localStorage);
 let current = null;      // 보기 화면의 Prayer
@@ -27,6 +28,7 @@ function renderHome() {
     li.append(b);
     list.append(li);
   }
+  updateResume();
   show('home');
 }
 $('toSettings').addEventListener('click', () => show('settings'));
@@ -171,3 +173,4 @@ applySize(savedSize);
 navigator.storage?.persist?.();
 renderHome();
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
+autoPrepare();

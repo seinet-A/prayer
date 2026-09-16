@@ -18,6 +18,8 @@
 <section id="home">
   <header><span></span><h1>기도</h1><button id="toSettings" class="small">설정</button></header>
   <button id="toRecord" class="big primary">기도하기</button>
+  <button id="toResume" class="big">성경 읽기</button>
+  <button id="toBooks" class="big">성경 찾기</button>
   <p id="empty" class="hint">아직 기도가 없어요. 위 버튼을 눌러 시작하세요.</p>
   <ul id="list"></ul>
 </section>
@@ -76,8 +78,32 @@
     <button class="big size" data-size="large">크게</button>
     <button class="big size" data-size="xlarge">아주 크게</button>
   </div>
+  <button id="prepBible" class="big">성경 내려받기</button>
+  <p id="bibleMsg" class="status"></p>
   <button id="export" class="big">전체 내보내기</button>
   <p id="settingsMsg" class="status"></p>
+</section>
+
+<section id="books" hidden>
+  <header><button class="back small">뒤로</button><h1>성경 찾기</h1><span></span></header>
+  <h2>구약</h2><div id="otGrid" class="grid2"></div>
+  <h2>신약</h2><div id="ntGrid" class="grid2"></div>
+</section>
+
+<section id="chapters" hidden>
+  <header><button class="back small" data-to="books">뒤로</button><h1 id="chaptersTitle"></h1><span></span></header>
+  <div id="chapterGrid" class="grid4"></div>
+</section>
+
+<section id="reader" hidden>
+  <header><button class="back small" data-to="chapters">뒤로</button><h1 id="readerTitle"></h1><span></span></header>
+  <p id="readerMsg" class="status"></p>
+  <div id="verses"></div>
+  <div class="bar">
+    <button id="prevCh" class="big">이전 장</button>
+    <button id="readCh" class="big primary">읽어주기</button>
+    <button id="nextCh" class="big">다음 장</button>
+  </div>
 </section>
 
 </main>
