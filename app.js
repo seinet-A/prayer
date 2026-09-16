@@ -175,3 +175,4 @@ try { savedSize = localStorage.getItem('fontSize') || 'normal'; } catch {}
 applySize(savedSize);
 navigator.storage?.persist?.();
 renderHome();
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
