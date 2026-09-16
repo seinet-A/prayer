@@ -1,4 +1,5 @@
 import * as S from './store.js';
+import * as V from './speech.js';
 
 const $ = id => document.getElementById(id);
 let store = S.load(localStorage);
@@ -9,6 +10,8 @@ let source = 'typed';
 // ---------- 화면 전환 ----------
 function show(name) {
   document.querySelectorAll('main > section').forEach(s => { s.hidden = s.id !== name; });
+  V.stopSpeaking();
+  $('speak').textContent = '읽어주기';
   window.scrollTo(0, 0);
 }
 document.querySelectorAll('.back').forEach(b => b.addEventListener('click', () => show('home')));
@@ -63,11 +66,31 @@ function showTyped(reason) {
   setRecState('typed', reason);
   $('typed').focus();
 }
+let finishTimer = null;
 function startListening() {
-  // Task 3에서 음성으로 교체. 지금은 키보드 칸.
-  showTyped('');
+  if (!V.canListen) { showTyped('이 기기는 음성 인식이 안 돼요. 대신 적어 주세요'); return; }
+  source = 'speech';
+  let finals = '';
+  V.start({
+    onText(f, interim) { finals = f; $('live').textContent = base + finals + interim; },
+    onState(state, detail) {
+      if (state === 'listening' || state === 'requesting') { setRecState(state); return; }
+      clearTimeout(finishTimer);
+      base += finals; finals = '';
+      $('live').textContent = base;
+      if (state === 'paused') setRecState('paused');
+      else if (state === 'done') goConfirm();
+      else if (state === 'denied') showTyped('마이크를 쓸 수 없어요. 대신 적어 주세요');
+      else showTyped('음성 인식이 안 돼요. 대신 적어 주세요');
+    },
+  });
 }
-function stopListening() {}
+function stopListening() {
+  setRecState('finishing');
+  V.stop();
+  // iOS가 onend를 안 주는 경우 대비
+  finishTimer = setTimeout(goConfirm, 3000);
+}
 $('mic').addEventListener('click', () => {
   if ($('mic').classList.contains('listening')) stopListening();
   else startListening();
@@ -104,6 +127,13 @@ function openView(id) {
   $('del').hidden = false;
   show('view');
 }
+$('speak').addEventListener('click', () => {
+  if ($('speak').textContent === '멈춤') { V.stopSpeaking(); $('speak').textContent = '읽어주기'; return; }
+  if (V.voicesLoaded() && !V.hasKoreanVoice()) $('viewMsg').textContent = '한국어 읽어주기 음성이 없어요';
+  const ok = V.speak(S.shownText(current), () => { $('speak').textContent = '읽어주기'; });
+  if (ok) $('speak').textContent = '멈춤';
+  else $('viewMsg').textContent = '이 기기는 읽어주기가 안 돼요';
+});
 $('share').addEventListener('click', async () => {
   const text = S.shownText(current);
   try {
