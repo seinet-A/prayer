@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { load, save, add, remove, shownText, toggleShowing, exportJSON, formatDate } from './store.js';
+import { load, save, add, remove, shownText, toggleShowing, setRefined, exportJSON, formatDate } from './store.js';
 
 function fakeStorage(initial) {
   const m = new Map(initial ? [['prayers', initial]] : []);
@@ -42,6 +42,17 @@ const withRefined = { version: 1, prayers: [{ ...p, refined: '다듬음' }] };
 assert.equal(toggleShowing(withRefined, 'id1').prayers[0].showing, 'refined');
 assert.equal(toggleShowing(toggleShowing(withRefined, 'id1'), 'id1').prayers[0].showing, 'original');
 assert.equal(withRefined.prayers[0].showing, 'original'); // 원본 불변
+
+// setRefined: 원문 불변, refined/refinedAt/showing 설정, 다른 기도는 그대로
+const sr = setRefined(s, 'id1', '하나님 아버지, 감사합니다.', now);
+assert.equal(sr.prayers[1].original, '하나님 감사합니다');
+assert.equal(sr.prayers[1].refined, '하나님 아버지, 감사합니다.');
+assert.equal(sr.prayers[1].refinedAt, '2026-09-16T10:00:00.000Z');
+assert.equal(sr.prayers[1].showing, 'refined');
+assert.equal(sr.prayers[0].refined, null);
+assert.equal(s.prayers[1].refined, null); // 원본 store 불변
+assert.equal(shownText(sr.prayers[1]), '하나님 아버지, 감사합니다.');
+assert.equal(shownText(toggleShowing(sr, 'id1').prayers[1]), '하나님 감사합니다');
 
 // exportJSON
 assert.deepEqual(JSON.parse(exportJSON(s)), s);

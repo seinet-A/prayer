@@ -3,6 +3,7 @@ import * as V from './speech.js';
 import { $, show, onLeave } from './ui.js';
 import { updateResume, autoPrepare } from './bible-ui.js';
 
+const REFINE_URL = '';   // Cloudflare Worker 주소. 비어 있으면 「다듬기」 숨김.
 let store = S.load(localStorage);
 let current = null;      // 보기 화면의 Prayer
 let base = '';           // 녹음 화면에 쌓인 확정 글
@@ -115,15 +116,45 @@ $('more').addEventListener('click', () => { base = $('confirmText').value + ' ';
 $('redo').addEventListener('click', () => { base = ''; resetRecord(); show('record'); });
 
 // ---------- 보기 ----------
+function renderView() {
+  $('viewText').textContent = S.shownText(current);
+  const refined = current.refined != null;
+  $('refine').hidden = refined || !REFINE_URL;
+  $('toggleText').hidden = !refined;
+  $('toggleText').textContent = current.showing === 'refined' ? '원문으로' : '다듬은 글로';
+}
 function openView(id) {
   current = store.prayers.find(p => p.id === id);
   $('viewDate').textContent = S.formatDate(current.createdAt);
-  $('viewText').textContent = S.shownText(current);
   $('viewMsg').textContent = '';
   $('delRow').hidden = true;
   $('del').hidden = false;
+  renderView();
   show('view');
 }
+function updatePrayer(next) {
+  try { S.save(localStorage, next); } catch { $('viewMsg').textContent = '저장하지 못했어요. 다시 눌러 주세요'; return false; }
+  store = next;
+  current = store.prayers.find(p => p.id === current.id);
+  renderView();
+  return true;
+}
+$('refine').addEventListener('click', async () => {
+  if (!navigator.onLine) { $('viewMsg').textContent = '인터넷이 필요해요'; return; }
+  $('refine').disabled = true;
+  $('viewMsg').textContent = '다듬는 중…';
+  try {
+    const r = await fetch(REFINE_URL, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text: current.original }) });
+    if (!r.ok) throw new Error(r.status);
+    const { refined } = await r.json();
+    if (!refined) throw new Error('empty');
+    if (updatePrayer(S.setRefined(store, current.id, refined))) $('viewMsg').textContent = '';
+  } catch {
+    $('viewMsg').textContent = '지금은 다듬을 수 없어요. 나중에 다시 해주세요';
+  }
+  $('refine').disabled = false;
+});
+$('toggleText').addEventListener('click', () => updatePrayer(S.toggleShowing(store, current.id)));
 $('speak').addEventListener('click', () => {
   if ($('speak').textContent === '멈춤') { V.stopSpeaking(); $('speak').textContent = '읽어주기'; return; }
   if (V.voicesLoaded() && !V.hasKoreanVoice()) $('viewMsg').textContent = '한국어 읽어주기 음성이 없어요';

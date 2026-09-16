@@ -36,6 +36,13 @@ export function shownText(p) {
   return p.showing === 'refined' && p.refined != null ? p.refined : p.original;
 }
 
+export function setRefined(store, id, refined, now = new Date()) {
+  return {
+    ...store,
+    prayers: store.prayers.map(p => p.id === id ? { ...p, refined, refinedAt: now.toISOString(), showing: 'refined' } : p),
+  };
+}
+
 export function toggleShowing(store, id) {
   return {
     ...store,
