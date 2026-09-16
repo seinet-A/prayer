@@ -1,0 +1,16 @@
+[
+{"id":"GEN","ko":"창세기","en":"Genesis"},{"id":"EXO","ko":"출애굽기","en":"Exodus"},{"id":"LEV","ko":"레위기","en":"Leviticus"},{"id":"NUM","ko":"민수기","en":"Numbers"},{"id":"DEU","ko":"신명기","en":"Deuteronomy"},
+{"id":"JOS","ko":"여호수아","en":"Joshua"},{"id":"JDG","ko":"사사기","en":"Judges"},{"id":"RUT","ko":"룻기","en":"Ruth"},{"id":"1SA","ko":"사무엘상","en":"1 Samuel"},{"id":"2SA","ko":"사무엘하","en":"2 Samuel"},
+{"id":"1KI","ko":"열왕기상","en":"1 Kings"},{"id":"2KI","ko":"열왕기하","en":"2 Kings"},{"id":"1CH","ko":"역대상","en":"1 Chronicles"},{"id":"2CH","ko":"역대하","en":"2 Chronicles"},{"id":"EZR","ko":"에스라","en":"Ezra"},
+{"id":"NEH","ko":"느헤미야","en":"Nehemiah"},{"id":"EST","ko":"에스더","en":"Esther"},{"id":"JOB","ko":"욥기","en":"Job"},{"id":"PSA","ko":"시편","en":"Psalm"},{"id":"PRO","ko":"잠언","en":"Proverbs"},
+{"id":"ECC","ko":"전도서","en":"Ecclesiastes"},{"id":"SNG","ko":"아가","en":"Song of Solomon"},{"id":"ISA","ko":"이사야","en":"Isaiah"},{"id":"JER","ko":"예레미야","en":"Jeremiah"},{"id":"LAM","ko":"예레미야애가","en":"Lamentations"},
+{"id":"EZK","ko":"에스겔","en":"Ezekiel"},{"id":"DAN","ko":"다니엘","en":"Daniel"},{"id":"HOS","ko":"호세아","en":"Hosea"},{"id":"JOL","ko":"요엘","en":"Joel"},{"id":"AMO","ko":"아모스","en":"Amos"},
+{"id":"OBA","ko":"오바댜","en":"Obadiah"},{"id":"JON","ko":"요나","en":"Jonah"},{"id":"MIC","ko":"미가","en":"Micah"},{"id":"NAM","ko":"나훔","en":"Nahum"},{"id":"HAB","ko":"하박국","en":"Habakkuk"},
+{"id":"ZEP","ko":"스바냐","en":"Zephaniah"},{"id":"HAG","ko":"학개","en":"Haggai"},{"id":"ZEC","ko":"스가랴","en":"Zechariah"},{"id":"MAL","ko":"말라기","en":"Malachi"},
+{"id":"MAT","ko":"마태복음","en":"Matthew"},{"id":"MRK","ko":"마가복음","en":"Mark"},{"id":"LUK","ko":"누가복음","en":"Luke"},{"id":"JHN","ko":"요한복음","en":"John"},{"id":"ACT","ko":"사도행전","en":"Acts"},
+{"id":"ROM","ko":"로마서","en":"Romans"},{"id":"1CO","ko":"고린도전서","en":"1 Corinthians"},{"id":"2CO","ko":"고린도후서","en":"2 Corinthians"},{"id":"GAL","ko":"갈라디아서","en":"Galatians"},{"id":"EPH","ko":"에베소서","en":"Ephesians"},
+{"id":"PHP","ko":"빌립보서","en":"Philippians"},{"id":"COL","ko":"골로새서","en":"Colossians"},{"id":"1TH","ko":"데살로니가전서","en":"1 Thessalonians"},{"id":"2TH","ko":"데살로니가후서","en":"2 Thessalonians"},{"id":"1TI","ko":"디모데전서","en":"1 Timothy"},
+{"id":"2TI","ko":"디모데후서","en":"2 Timothy"},{"id":"TIT","ko":"디도서","en":"Titus"},{"id":"PHM","ko":"빌레몬서","en":"Philemon"},{"id":"HEB","ko":"히브리서","en":"Hebrews"},{"id":"JAS","ko":"야고보서","en":"James"},
+{"id":"1PE","ko":"베드로전서","en":"1 Peter"},{"id":"2PE","ko":"베드로후서","en":"2 Peter"},{"id":"1JN","ko":"요한일서","en":"1 John"},{"id":"2JN","ko":"요한이서","en":"2 John"},{"id":"3JN","ko":"요한삼서","en":"3 John"},
+{"id":"JUD","ko":"유다서","en":"Jude"},{"id":"REV","ko":"요한계시록","en":"Revelation"}
+]
