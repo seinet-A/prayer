@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="기도">
+<meta name="theme-color" content="#ffffff">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="style.css">
+<title>기도</title>
+</head>
+<body>
+<main>
+
+<section id="home">
+  <header><span></span><h1>기도</h1><button id="toSettings" class="small">설정</button></header>
+  <button id="toRecord" class="big primary">기도하기</button>
+  <p id="empty" class="hint">아직 기도가 없어요. 위 버튼을 눌러 시작하세요.</p>
+  <ul id="list"></ul>
+</section>
+
+<section id="record" hidden>
+  <header><button class="back small">뒤로</button><h1>기도하기</h1><span></span></header>
+  <button id="mic" class="mic">말하기</button>
+  <p id="recStatus" class="status"></p>
+  <p id="recHint" class="hint"></p>
+  <div id="live" class="text"></div>
+  <div id="pausedRow" class="row" hidden>
+    <button id="resume" class="big">이어서 말하기</button>
+    <button id="finish" class="big primary">다 했어요</button>
+  </div>
+  <div id="typedBox" hidden>
+    <textarea id="typed" rows="6" placeholder="여기에 기도를 적어 주세요"></textarea>
+    <button id="typedDone" class="big primary">다 적었어요</button>
+  </div>
+</section>
+
+<section id="confirm" hidden>
+  <header><button class="back small">뒤로</button><h1>확인</h1><span></span></header>
+  <p class="hint">틀린 글자가 있으면 고쳐 주세요.</p>
+  <textarea id="confirmText" rows="8"></textarea>
+  <p id="saveMsg" class="status"></p>
+  <button id="save" class="big primary">저장</button>
+  <div class="row">
+    <button id="more" class="big">이어서 말하기</button>
+    <button id="redo" class="big">다시 하기</button>
+  </div>
+</section>
+
+<section id="view" hidden>
+  <header><button class="back small">뒤로</button><h1 id="viewDate"></h1><span></span></header>
+  <div id="viewText" class="text"></div>
+  <p id="viewMsg" class="status"></p>
+  <div class="row">
+    <button id="speak" class="big primary">읽어주기</button>
+    <button id="share" class="big">공유</button>
+  </div>
+  <button id="del" class="big danger">지우기</button>
+  <div id="delRow" hidden>
+    <p class="status">정말 지울까요?</p>
+    <div class="row">
+      <button id="delYes" class="big danger">네, 지워요</button>
+      <button id="delNo" class="big">아니요</button>
+    </div>
+  </div>
+</section>
+
+<section id="settings" hidden>
+  <header><button class="back small">뒤로</button><h1>설정</h1><span></span></header>
+  <p>글자 크기</p>
+  <div class="row">
+    <button class="big size" data-size="normal">보통</button>
+    <button class="big size" data-size="large">크게</button>
+    <button class="big size" data-size="xlarge">아주 크게</button>
+  </div>
+  <button id="export" class="big">전체 내보내기</button>
+  <p id="settingsMsg" class="status"></p>
+</section>
+
+</main>
+<script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,147 @@
+import * as S from './store.js';
+
+const $ = id => document.getElementById(id);
+let store = S.load(localStorage);
+let current = null;      // 보기 화면의 Prayer
+let base = '';           // 녹음 화면에 쌓인 확정 글
+let source = 'typed';
+
+// ---------- 화면 전환 ----------
+function show(name) {
+  document.querySelectorAll('main > section').forEach(s => { s.hidden = s.id !== name; });
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll('.back').forEach(b => b.addEventListener('click', () => show('home')));
+
+// ---------- 홈 ----------
+function renderHome() {
+  const list = $('list');
+  list.innerHTML = '';
+  $('empty').hidden = store.prayers.length > 0;
+  for (const p of store.prayers) {
+    const li = document.createElement('li');
+    const b = document.createElement('button');
+    const date = document.createElement('span');
+    date.className = 'date';
+    date.textContent = S.formatDate(p.createdAt);
+    b.append(date, S.shownText(p).split('\n')[0].slice(0, 30));
+    b.addEventListener('click', () => openView(p.id));
+    li.append(b);
+    list.append(li);
+  }
+  show('home');
+}
+$('toSettings').addEventListener('click', () => show('settings'));
+$('toRecord').addEventListener('click', () => { base = ''; resetRecord(); show('record'); });
+
+// ---------- 녹음 ----------
+function resetRecord() {
+  $('live').textContent = base;
+  $('typed').value = '';
+  setRecState('idle');
+}
+function setRecState(state, detail) {
+  const mic = $('mic');
+  mic.classList.toggle('listening', state === 'listening');
+  mic.textContent = state === 'listening' ? '그만' : '말하기';
+  mic.hidden = state === 'typed';
+  $('pausedRow').hidden = state !== 'paused';
+  $('typedBox').hidden = state !== 'typed';
+  const msg = {
+    idle: ['', '버튼을 누르고 말씀하세요'],
+    requesting: ['마이크 사용을 허락해 주세요', ''],
+    listening: ['듣고 있어요', '다 말씀하시면 「그만」을 누르세요'],
+    finishing: ['정리하고 있어요', ''],
+    paused: ['잠시 멈췄어요', '더 말씀하시려면 「이어서 말하기」'],
+    typed: [detail || '', '다 적으면 아래 버튼을 누르세요'],
+  }[state] || ['', ''];
+  $('recStatus').textContent = msg[0];
+  $('recHint').textContent = msg[1];
+}
+function showTyped(reason) {
+  source = 'typed';
+  setRecState('typed', reason);
+  $('typed').focus();
+}
+function startListening() {
+  // Task 3에서 음성으로 교체. 지금은 키보드 칸.
+  showTyped('');
+}
+function stopListening() {}
+$('mic').addEventListener('click', () => {
+  if ($('mic').classList.contains('listening')) stopListening();
+  else startListening();
+});
+$('resume').addEventListener('click', startListening);
+$('finish').addEventListener('click', goConfirm);
+$('typedDone').addEventListener('click', () => { base = $('typed').value; goConfirm(); });
+
+// ---------- 확인 ----------
+function goConfirm() {
+  $('confirmText').value = base.trim();
+  $('saveMsg').textContent = '';
+  show('confirm');
+}
+$('save').addEventListener('click', () => {
+  const text = $('confirmText').value.trim();
+  if (!text) { $('saveMsg').textContent = '내용이 없어요'; return; }
+  const next = S.add(store, text, source);
+  try { S.save(localStorage, next); }
+  catch { $('saveMsg').textContent = '저장하지 못했어요. 다시 눌러 주세요'; return; }
+  store = next;
+  renderHome();
+});
+$('more').addEventListener('click', () => { base = $('confirmText').value + ' '; resetRecord(); show('record'); startListening(); });
+$('redo').addEventListener('click', () => { base = ''; resetRecord(); show('record'); });
+
+// ---------- 보기 ----------
+function openView(id) {
+  current = store.prayers.find(p => p.id === id);
+  $('viewDate').textContent = S.formatDate(current.createdAt);
+  $('viewText').textContent = S.shownText(current);
+  $('viewMsg').textContent = '';
+  $('delRow').hidden = true;
+  $('del').hidden = false;
+  show('view');
+}
+$('share').addEventListener('click', async () => {
+  const text = S.shownText(current);
+  try {
+    if (navigator.share) await navigator.share({ text });
+    else { await navigator.clipboard.writeText(text); $('viewMsg').textContent = '복사했어요'; }
+  } catch {}
+});
+$('del').addEventListener('click', () => { $('delRow').hidden = false; $('del').hidden = true; });
+$('delNo').addEventListener('click', () => { $('delRow').hidden = true; $('del').hidden = false; });
+$('delYes').addEventListener('click', () => {
+  const next = S.remove(store, current.id);
+  try { S.save(localStorage, next); }
+  catch { $('viewMsg').textContent = '지우지 못했어요. 다시 눌러 주세요'; return; }
+  store = next;
+  renderHome();
+});
+
+// ---------- 설정 ----------
+function applySize(size) {
+  document.documentElement.dataset.size = size;
+  document.querySelectorAll('.size').forEach(b => b.classList.toggle('on', b.dataset.size === size));
+  try { localStorage.setItem('fontSize', size); } catch {}
+}
+document.querySelectorAll('.size').forEach(b => b.addEventListener('click', () => applySize(b.dataset.size)));
+$('export').addEventListener('click', async () => {
+  const file = new File([S.exportJSON(store)], `기도문-${new Date().toISOString().slice(0, 10)}.json`, { type: 'application/json' });
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); return; }
+  } catch { return; }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(file); a.download = file.name; a.click();
+  URL.revokeObjectURL(a.href);
+  $('settingsMsg').textContent = '내려받았어요';
+});
+
+// ---------- 시작 ----------
+let savedSize = 'normal';
+try { savedSize = localStorage.getItem('fontSize') || 'normal'; } catch {}
+applySize(savedSize);
+navigator.storage?.persist?.();
+renderHome();
