@@ -65,12 +65,12 @@ function renderLive(interim = '') {
     box.append(p);
   });
   if (interim) { const p = document.createElement('p'); p.className = 'clause interim'; p.textContent = interim; box.append(p); }
+  box.scrollTop = box.scrollHeight;   // 길어지면 맨 아래(방금 말한 것)가 보이게
 }
 function resetRecord() {
   removeIdx = -1;
   afterStop = null;
   renderLive();
-  $('typed').value = '';
   setRecState('idle');
 }
 function setRecState(state, detail) {
@@ -78,6 +78,7 @@ function setRecState(state, detail) {
   mic.classList.toggle('listening', state === 'listening');
   mic.textContent = state === 'listening' ? '그만' : '말하기';
   mic.hidden = state === 'typed' || state === 'remove';
+  $('toTyped').hidden = state !== 'idle' && state !== 'paused' && state !== 'notfound';
   $('pausedRow').hidden = state !== 'paused' && state !== 'notfound';
   $('removeRow').hidden = state !== 'remove';
   $('typedBox').hidden = state !== 'typed';
@@ -112,9 +113,11 @@ function onStopped() {
 }
 function showTyped(reason) {
   source = 'typed';
+  $('typed').value = clauses.join('\n');   // 말한 게 있으면 이어서 적을 수 있게
   setRecState('typed', reason);
   $('typed').focus();
 }
+$('toTyped').addEventListener('click', () => showTyped(''));
 let finishTimer = null;
 function startListening() {
   if (!V.canListen) { showTyped('이 기기는 음성 인식이 안 돼요. 대신 적어 주세요'); return; }

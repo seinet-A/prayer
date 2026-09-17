@@ -20,6 +20,7 @@ button:active { opacity: .7; }
 .status { text-align: center; min-height: 1.6em; margin: 8px 0; font-weight: bold; }
 .hint { color: #555; font-size: calc(var(--fs) * .7); text-align: center; }
 .text { min-height: 6em; padding: 16px; background: #f7f7f7; border-radius: 16px; white-space: pre-wrap; word-break: keep-all; }
+#live { max-height: 45vh; overflow-y: auto; }   /* 말한 게 길어지면 상자 안에서 스크롤, 버튼은 제자리 */
 textarea { width: 100%; font: inherit; padding: 16px; border: 2px solid #888; border-radius: 16px; }
 ul { list-style: none; padding: 0; margin: 0; }
 li button { text-align: left; background: #fff; }
