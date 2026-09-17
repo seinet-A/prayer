@@ -1,4 +1,4 @@
-const CACHE = 'prayer-v4';
+const CACHE = 'prayer-v5';
 const BIBLE = 'bible-v1';
 const FILES = ['./', './index.html', './style.css', './app.js', './ui.js', './store.js', './speech.js', './commands.js', './bible.js', './bible-ui.js', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './bible/index.json'];
 

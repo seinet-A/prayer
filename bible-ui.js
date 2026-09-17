@@ -11,7 +11,7 @@ export async function updateResume() {
 }
 
 function renderBooks() {
-  for (const [gridId, ot] of [['otGrid', true], ['ntGrid', false]]) {
+  if (!$('otGrid').children.length) for (const [gridId, ot] of [['otGrid', true], ['ntGrid', false]]) {
     const g = $(gridId); g.innerHTML = '';
     for (const b of index.filter(b => b.ot === ot)) {
       const btn = document.createElement('button');
@@ -22,6 +22,9 @@ function renderBooks() {
   }
   show('books');
 }
+// 「뒤로」: 본문 → 그 책의 장 고르기 → 책 고르기. 「이어서 읽기」로 바로 들어온 경우 목록이 안 만들어져 있을 수 있어 여기서 만든다.
+document.querySelector('#chapters .back').addEventListener('click', renderBooks);
+document.querySelector('#reader .back').addEventListener('click', () => { if (cur) openChapters(cur.book); });
 function openChapters(book) {
   const b = index.find(x => x.id === book);
   $('chaptersTitle').textContent = b.ko;
@@ -72,10 +75,7 @@ function mark(v) {
 $('prevCh').addEventListener('click', () => { const p = B.prevChapter(index, cur.book, cur.chapter); if (p) openChapter(p.book, p.chapter, 1); });
 $('nextCh').addEventListener('click', () => { const n = B.nextChapter(index, cur.book, cur.chapter); if (n) openChapter(n.book, n.chapter, 1); });
 
-$('toBooks').addEventListener('click', async () => {
-  try { index = await B.loadIndex(); renderBooks(); }
-  catch { alert('성경 목록을 불러오지 못했어요. 인터넷을 켜고 다시 해주세요'); }
-});
+// 「성경 읽기」 하나로: 읽던 자리로 바로 들어가고, 「뒤로」로 장·책 고르기.
 $('toResume').addEventListener('click', async () => {
   try { index = await B.loadIndex(); }
   catch { alert('성경 목록을 불러오지 못했어요. 인터넷을 켜고 다시 해주세요'); return; }
