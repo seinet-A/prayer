@@ -39,5 +39,6 @@ h2 { font-size: var(--fs); margin: 24px 0 8px; color: #555; }
 .bar > button { flex: 1; margin: 0; }
 button:disabled { opacity: .35; }
 .clause { margin: 0 0 8px; }
+.clause .num { color: #888; font-size: calc(var(--fs) * .7); margin-right: 8px; }
 .clause.gone { color: #b91c1c; background: #fee2e2; text-decoration: line-through; border-radius: 8px; }
 .clause.interim { color: #888; }

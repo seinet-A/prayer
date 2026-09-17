@@ -23,6 +23,20 @@ assert.deepEqual(detectCommand('마지막 거 지워줘'), { type: 'remove', key
 assert.deepEqual(detectCommand('아까 무릎 얘기 빼줘'), { type: 'remove', keywords: ['무릎'] });
 assert.deepEqual(detectCommand('아까 영감 무릎 아프다고 한 거 빼 주세요'), { type: 'remove', keywords: ['영감', '무릎', '아프다고'] });
 assert.deepEqual(detectCommand('손주 시험 얘기한 거 없애줘'), { type: 'remove', keywords: ['손주', '시험', '얘기한'] });
+// 줄 번호로
+import { lineNumber } from './commands.js';
+assert.equal(lineNumber('3번 빼줘'), 3);
+assert.equal(lineNumber('3번째 줄 지워줘'), 3);
+assert.equal(lineNumber('세 번째 줄 빼줘'), 3);
+assert.equal(lineNumber('셋째 줄 빼줘'), 3);
+assert.equal(lineNumber('첫 줄 빼줘'), 1);
+assert.equal(lineNumber('두 번째 빼줘'), 2);
+assert.equal(lineNumber('열 번째 줄 빼줘'), 10);
+assert.equal(lineNumber('아까 무릎 얘기 빼줘'), 0);
+assert.deepEqual(detectCommand('3번 빼줘'), { type: 'remove', keywords: [], line: 3 });
+assert.deepEqual(detectCommand('세 번째 줄 지워 주세요'), { type: 'remove', keywords: [], line: 3 });
+assert.deepEqual(detectCommand('첫 줄 빼줘'), { type: 'remove', keywords: [], line: 1 });
+assert.equal(detectCommand('세 번째 아들 지켜주세요'), null);   // 빼는 동사 없음 → 기도
 // 가리키는 말이 없으면 기도
 assert.equal(detectCommand('이 병을 빼주세요'), null);
 assert.equal(detectCommand('내 죄를 지워주세요'), null);
@@ -47,6 +61,9 @@ r = ingest(r.clauses, '방금 거 빼줘');
 assert.deepEqual(r.action, { type: 'remove', index: 2 });
 r = ingest(r.clauses, '아까 자동차 얘기 빼줘');
 assert.deepEqual(r.action, { type: 'remove', index: -1 });
+assert.deepEqual(ingest(r.clauses, '2번 빼줘').action, { type: 'remove', index: 1 });
+assert.deepEqual(ingest(r.clauses, '첫 줄 빼줘').action, { type: 'remove', index: 0 });
+assert.deepEqual(ingest(r.clauses, '9번 빼줘').action, { type: 'remove', index: -1 });   // 없는 줄
 r = ingest(r.clauses, '됐어요');
 assert.deepEqual(r, { clauses: r.clauses, action: { type: 'end' } });
 assert.equal(r.clauses.length, 3);

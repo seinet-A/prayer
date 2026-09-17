@@ -45,7 +45,8 @@ function renderLive(interim = '') {
   clauses.forEach((c, i) => {
     const p = document.createElement('p');
     p.className = 'clause' + (i === removeIdx ? ' gone' : '');
-    p.textContent = c;
+    const n = document.createElement('span'); n.className = 'num'; n.textContent = i + 1;
+    p.append(n, c);
     box.append(p);
   });
   if (interim) { const p = document.createElement('p'); p.className = 'clause interim'; p.textContent = interim; box.append(p); }
@@ -68,7 +69,7 @@ function setRecState(state, detail) {
   const msg = {
     idle: ['', '버튼을 누르고 말씀하세요. "됐어요"라고 하면 끝나요'],
     requesting: ['마이크 사용을 허락해 주세요', ''],
-    listening: ['듣고 있어요', '다 말씀하시면 「그만」을 누르거나 "됐어요"라고 하세요'],
+    listening: ['듣고 있어요', '"됐어요"로 끝내고, "3번 빼줘"로 지워요'],
     finishing: ['정리하고 있어요', ''],
     paused: ['잠시 멈췄어요', '더 말씀하시려면 「이어서 말하기」'],
     remove: ['이 부분을 뺄까요?', ''],
@@ -130,8 +131,9 @@ $('mic').addEventListener('click', () => {
 });
 $('resume').addEventListener('click', startListening);
 $('finish').addEventListener('click', goConfirm);
-$('removeYes').addEventListener('click', () => { if (removeIdx >= 0) clauses.splice(removeIdx, 1); removeIdx = -1; renderLive(); setRecState('paused'); });
-$('removeNo').addEventListener('click', () => { removeIdx = -1; renderLive(); setRecState('paused'); });
+// 빼기 답을 하면 바로 다시 듣는다 (어르신이 「이어서 말하기」를 누르지 않아도 되게)
+$('removeYes').addEventListener('click', () => { if (removeIdx >= 0) clauses.splice(removeIdx, 1); removeIdx = -1; renderLive(); startListening(); });
+$('removeNo').addEventListener('click', () => { removeIdx = -1; renderLive(); startListening(); });
 $('typedDone').addEventListener('click', () => { clauses = linesOf($('typed').value); goConfirm(); });
 function linesOf(text) { return text.split('\n').map(s => s.trim()).filter(Boolean); }
 
