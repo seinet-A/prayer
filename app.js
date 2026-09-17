@@ -189,6 +189,7 @@ function renderView() {
   $('viewText').textContent = S.shownText(current);
   const refined = current.refined != null;
   $('refine').hidden = refined || !REFINE_URL;
+  if (!(current.audioParts > 0)) $('voiceRow').hidden = true;
   $('toggleText').hidden = !refined;
   $('toggleText').textContent = current.showing === 'refined' ? '원문으로' : '다듬은 글로';
 }
@@ -199,16 +200,27 @@ function openView(id) {
   $('delRow').hidden = true;
   $('del').hidden = false;
   currentAudio = [];
-  $('playVoice').hidden = true;
+  $('voiceRow').hidden = true;
+  $('delVoiceRow').hidden = true;
   renderView();
   show('view');
   if (current.audioParts > 0) {
     // 미리 읽어 두면 버튼 누름(사용자 동작) 안에서 바로 재생할 수 있다 (iOS)
     A.loadParts(id, current.audioParts).then(blobs => {
-      if (current?.id === id && blobs.length) { currentAudio = blobs; $('playVoice').hidden = false; }
+      if (current?.id === id && blobs.length) { currentAudio = blobs; $('voiceRow').hidden = false; }
     });
   }
 }
+$('delVoice').addEventListener('click', () => { A.stop(); $('playVoice').textContent = '내 목소리로 듣기'; $('delVoiceRow').hidden = false; $('voiceRow').hidden = true; });
+$('delVoiceNo').addEventListener('click', () => { $('delVoiceRow').hidden = true; $('voiceRow').hidden = false; });
+$('delVoiceYes').addEventListener('click', async () => {
+  const id = current.id, n = current.audioParts || 0;
+  $('delVoiceRow').hidden = true;
+  if (!updatePrayer(S.setAudio(store, id, 0))) return;   // 글의 기록을 먼저 지우고
+  currentAudio = [];
+  await A.deleteParts(id, n);                            // 조각을 지운다
+  if (current?.id === id) $('viewMsg').textContent = '녹음을 지웠어요';
+});
 $('playVoice').addEventListener('click', () => {
   if ($('playVoice').textContent === '멈춤') { A.stop(); $('playVoice').textContent = '내 목소리로 듣기'; return; }
   A.play(currentAudio, () => { $('playVoice').textContent = '내 목소리로 듣기'; });

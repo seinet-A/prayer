@@ -63,7 +63,17 @@
   <header><button class="back small">뒤로</button><h1 id="viewDate"></h1><span></span></header>
   <div id="viewText" class="text"></div>
   <p id="viewMsg" class="status"></p>
-  <button id="playVoice" class="big" hidden>내 목소리로 듣기</button>
+  <div id="voiceRow" class="row" hidden>
+    <button id="playVoice" class="big">내 목소리로 듣기</button>
+    <button id="delVoice" class="small">녹음 지우기</button>
+  </div>
+  <div id="delVoiceRow" hidden>
+    <p class="status">녹음만 지울까요? 글은 남아요.</p>
+    <div class="row">
+      <button id="delVoiceYes" class="big danger">네, 녹음 지워요</button>
+      <button id="delVoiceNo" class="big">아니요</button>
+    </div>
+  </div>
   <div class="row">
     <button id="refine" class="big primary">다듬기</button>
     <button id="toggleText" class="big" hidden>원문으로</button>
