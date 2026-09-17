@@ -42,3 +42,8 @@ button:disabled { opacity: .35; }
 .clause .num { color: #888; font-size: calc(var(--fs) * .7); margin-right: 8px; }
 .clause.gone { color: #b91c1c; background: #fee2e2; text-decoration: line-through; border-radius: 8px; }
 .clause.interim { color: #888; }
+ol.intro { padding-left: 1.2em; margin: 24px 0; }
+ol.intro li { margin-bottom: 20px; }
+#undoRow { align-items: center; }
+#undoRow .status { flex: 1; margin: 0; }
+#undoRow button { flex: 1; }

@@ -32,6 +32,17 @@ export function remove(store, id) {
   return { ...store, prayers: store.prayers.filter(p => p.id !== id) };
 }
 
+// 지운 기도를 원래 자리(최신순)에 되살린다.
+export function restore(store, prayer) {
+  if (store.prayers.some(p => p.id === prayer.id)) return store;
+  const prayers = [...store.prayers, prayer].sort((a, b) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0));
+  return { ...store, prayers };
+}
+
+export function setAudio(store, id, n) {
+  return { ...store, prayers: store.prayers.map(p => p.id === id ? { ...p, audioParts: n } : p) };
+}
+
 export function shownText(p) {
   return p.showing === 'refined' && p.refined != null ? p.refined : p.original;
 }

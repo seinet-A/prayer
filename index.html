@@ -19,6 +19,10 @@
   <header><span></span><h1>기도</h1><button id="toSettings" class="small">설정</button></header>
   <button id="toRecord" class="big primary">기도하기</button>
   <button id="toResume" class="big">성경 읽기</button>
+  <div id="undoRow" class="row" hidden>
+    <p class="status">지웠어요</p>
+    <button id="undo" class="big">되살리기</button>
+  </div>
   <p id="empty" class="hint">아직 기도가 없어요. 위 버튼을 눌러 시작하세요.</p>
   <ul id="list"></ul>
 </section>
@@ -59,6 +63,7 @@
   <header><button class="back small">뒤로</button><h1 id="viewDate"></h1><span></span></header>
   <div id="viewText" class="text"></div>
   <p id="viewMsg" class="status"></p>
+  <button id="playVoice" class="big" hidden>내 목소리로 듣기</button>
   <div class="row">
     <button id="refine" class="big primary">다듬기</button>
     <button id="toggleText" class="big" hidden>원문으로</button>
@@ -83,10 +88,22 @@
     <button class="big size" data-size="large">크게</button>
     <button class="big size" data-size="xlarge">아주 크게</button>
   </div>
+  <button id="beepToggle" class="big">소리 신호 끄기</button>
+  <button id="showIntro" class="big">안내 다시 보기</button>
   <button id="prepBible" class="big">성경 내려받기</button>
   <p id="bibleMsg" class="status"></p>
   <button id="export" class="big">전체 내보내기</button>
   <p id="settingsMsg" class="status"></p>
+</section>
+
+<section id="intro" hidden>
+  <header><span></span><h1>이렇게 쓰세요</h1><span></span></header>
+  <ol class="intro">
+    <li>「기도하기」 다음 「말하기」를 누르고 기도하세요.</li>
+    <li>다 하시면 <b>"됐어요"</b>라고 말하세요.</li>
+    <li>잘못 말한 줄은 <b>"3번 빼줘"</b>라고 하세요.</li>
+  </ol>
+  <button id="introDone" class="big primary">알겠어요</button>
 </section>
 
 <section id="books" hidden>

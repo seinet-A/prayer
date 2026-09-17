@@ -3,6 +3,7 @@ import * as V from './speech.js';
 import { $, show, onLeave } from './ui.js';
 import { updateResume, autoPrepare } from './bible-ui.js';
 import * as C from './commands.js';
+import * as A from './audio.js';
 
 const REFINE_URL = '';   // Cloudflare Worker 주소. 비어 있으면 「다듬기」 숨김.
 let store = S.load(localStorage);
@@ -11,9 +12,13 @@ let clauses = [];        // 녹음 화면에 쌓인 구절들
 let removeIdx = -1;      // 빼기 확인 중인 구절 번호
 let afterStop = null;    // 인식이 멈춘 뒤 할 일: 'confirm' | 'remove'
 let source = 'typed';
+let parts = [];          // 이번 기도의 녹음 조각들
+let currentAudio = [];   // 보기 화면에 미리 읽어 둔 녹음 조각들
+let lastDeleted = null;  // 되살리기용
+let undoTimer = null;
 
 // ---------- 화면 전환 ----------
-onLeave.push(() => { V.stopSpeaking(); $('speak').textContent = '읽어주기'; });
+onLeave.push(() => { V.stopSpeaking(); $('speak').textContent = '읽어주기'; A.stop(); $('playVoice').textContent = '내 목소리로 듣기'; });
 document.querySelectorAll('.back').forEach(b => b.addEventListener('click', () => show(b.dataset.to || 'home')));
 
 // ---------- 홈 ----------
@@ -36,7 +41,17 @@ function renderHome() {
   show('home');
 }
 $('toSettings').addEventListener('click', () => show('settings'));
-$('toRecord').addEventListener('click', () => { clauses = []; resetRecord(); show('record'); });
+$('toRecord').addEventListener('click', () => { clauses = []; parts = []; resetRecord(); show('record'); });
+
+// ---------- 첫 안내 ----------
+$('introDone').addEventListener('click', () => { try { localStorage.setItem('introSeen', '1'); } catch {} renderHome(); });
+$('showIntro').addEventListener('click', () => show('intro'));
+
+// ---------- 녹음 조각 ----------
+async function keepPart() {
+  const blob = await A.stopRecording();
+  if (blob) parts.push(blob);
+}
 
 // ---------- 녹음 ----------
 function renderLive(interim = '') {
@@ -83,11 +98,13 @@ function setRecState(state, detail) {
 function stopFor(what) {
   afterStop = what;
   setRecState('finishing');
+  A.beep(660);
   V.stop();
   finishTimer = setTimeout(onStopped, 3000);
 }
 function onStopped() {
   clearTimeout(finishTimer);
+  keepPart();
   const what = afterStop;
   afterStop = null;
   if (what === 'remove') setRecState(removeIdx >= 0 ? 'remove' : 'notfound');
@@ -115,9 +132,11 @@ function startListening() {
       renderLive(interim);
     },
     onState(state) {
-      if (state === 'listening' || state === 'requesting') { setRecState(state); return; }
+      if (state === 'requesting') { setRecState(state); return; }
+      if (state === 'listening') { setRecState(state); A.beep(880); A.startRecording(); return; }
       renderLive();
       if (afterStop) { onStopped(); return; }
+      keepPart();
       if (state === 'paused') setRecState('paused');
       else if (state === 'done') goConfirm();
       else if (state === 'denied') showTyped('마이크를 쓸 수 없어요. 대신 적어 주세요');
@@ -126,6 +145,7 @@ function startListening() {
   });
 }
 $('mic').addEventListener('click', () => {
+  A.prepareBeep();
   if ($('mic').classList.contains('listening')) stopFor('confirm');
   else startListening();
 });
@@ -150,10 +170,16 @@ $('save').addEventListener('click', () => {
   try { S.save(localStorage, next); }
   catch { $('saveMsg').textContent = '저장하지 못했어요. 다시 눌러 주세요'; return; }
   store = next;
+  const id = next.prayers[0].id;
+  const toSave = parts; parts = [];
+  if (toSave.length) {
+    // 녹음은 덤: 실패해도 글은 이미 저장됐다
+    A.saveParts(id, toSave).then(n => { if (n) { const s2 = S.setAudio(store, id, n); try { S.save(localStorage, s2); store = s2; } catch {} } });
+  }
   renderHome();
 });
 $('more').addEventListener('click', () => { clauses = linesOf($('confirmText').value); resetRecord(); show('record'); startListening(); });
-$('redo').addEventListener('click', () => { clauses = []; resetRecord(); show('record'); });
+$('redo').addEventListener('click', () => { clauses = []; parts = []; resetRecord(); show('record'); });
 
 // ---------- 보기 ----------
 function renderView() {
@@ -169,9 +195,22 @@ function openView(id) {
   $('viewMsg').textContent = '';
   $('delRow').hidden = true;
   $('del').hidden = false;
+  currentAudio = [];
+  $('playVoice').hidden = true;
   renderView();
   show('view');
+  if (current.audioParts > 0) {
+    // 미리 읽어 두면 버튼 누름(사용자 동작) 안에서 바로 재생할 수 있다 (iOS)
+    A.loadParts(id, current.audioParts).then(blobs => {
+      if (current?.id === id && blobs.length) { currentAudio = blobs; $('playVoice').hidden = false; }
+    });
+  }
 }
+$('playVoice').addEventListener('click', () => {
+  if ($('playVoice').textContent === '멈춤') { A.stop(); $('playVoice').textContent = '내 목소리로 듣기'; return; }
+  A.play(currentAudio, () => { $('playVoice').textContent = '내 목소리로 듣기'; });
+  $('playVoice').textContent = '멈춤';
+});
 function updatePrayer(next) {
   try { S.save(localStorage, next); } catch { $('viewMsg').textContent = '저장하지 못했어요. 다시 눌러 주세요'; return false; }
   store = next;
@@ -219,6 +258,26 @@ $('delYes').addEventListener('click', () => {
   try { S.save(localStorage, next); }
   catch { $('viewMsg').textContent = '지우지 못했어요. 다시 눌러 주세요'; return; }
   store = next;
+  finishUndo();                     // 이전에 지운 게 있으면 그건 확정
+  lastDeleted = current;
+  $('undoRow').hidden = false;
+  undoTimer = setTimeout(finishUndo, 6000);
+  renderHome();
+});
+// 되살리기 시간이 끝나면 녹음 조각도 지운다
+function finishUndo() {
+  clearTimeout(undoTimer);
+  $('undoRow').hidden = true;
+  if (lastDeleted?.audioParts > 0) A.deleteParts(lastDeleted.id, lastDeleted.audioParts);
+  lastDeleted = null;
+}
+$('undo').addEventListener('click', () => {
+  if (!lastDeleted) return;
+  clearTimeout(undoTimer);
+  const next = S.restore(store, lastDeleted);
+  try { S.save(localStorage, next); store = next; } catch {}
+  lastDeleted = null;
+  $('undoRow').hidden = true;
   renderHome();
 });
 
@@ -229,6 +288,16 @@ function applySize(size) {
   try { localStorage.setItem('fontSize', size); } catch {}
 }
 document.querySelectorAll('.size').forEach(b => b.addEventListener('click', () => applySize(b.dataset.size)));
+function renderBeep() {
+  let off = false;
+  try { off = localStorage.getItem('beep') === 'off'; } catch {}
+  $('beepToggle').textContent = off ? '소리 신호 켜기' : '소리 신호 끄기';
+}
+$('beepToggle').addEventListener('click', () => {
+  try { localStorage.setItem('beep', localStorage.getItem('beep') === 'off' ? 'on' : 'off'); } catch {}
+  renderBeep();
+});
+renderBeep();
 $('export').addEventListener('click', async () => {
   const file = new File([S.exportJSON(store)], `기도문-${new Date().toISOString().slice(0, 10)}.json`, { type: 'application/json' });
   try {
@@ -245,6 +314,8 @@ let savedSize = 'normal';
 try { savedSize = localStorage.getItem('fontSize') || 'normal'; } catch {}
 applySize(savedSize);
 navigator.storage?.persist?.();
-renderHome();
+let introSeen = false;
+try { introSeen = !!localStorage.getItem('introSeen'); } catch {}
+if (introSeen) renderHome(); else { renderHome(); show('intro'); }
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
 autoPrepare();

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { load, save, add, remove, shownText, toggleShowing, setRefined, exportJSON, formatDate } from './store.js';
+import { load, save, add, remove, restore, setAudio, shownText, toggleShowing, setRefined, exportJSON, formatDate } from './store.js';
 
 function fakeStorage(initial) {
   const m = new Map(initial ? [['prayers', initial]] : []);
@@ -31,6 +31,22 @@ assert.deepEqual(load(st), s);
 // remove
 assert.deepEqual(remove(s, 'id1').prayers.map(p => p.id), ['id2']);
 assert.deepEqual(remove(s, 'none').prayers.map(p => p.id), ['id2', 'id1']);
+
+// restore: 원래 자리(최신순)로, 두 번 넣어도 하나
+{
+  const a = add({ version: 1, prayers: [] }, '첫째', 'typed', new Date('2026-09-01T00:00:00Z'), 'a');
+  const ab = add(a, '둘째', 'typed', new Date('2026-09-02T00:00:00Z'), 'b');
+  const abc = add(ab, '셋째', 'typed', new Date('2026-09-03T00:00:00Z'), 'c');
+  const mid = abc.prayers[1];                         // b
+  const without = remove(abc, 'b');
+  assert.deepEqual(without.prayers.map(p => p.id), ['c', 'a']);
+  assert.deepEqual(restore(without, mid).prayers.map(p => p.id), ['c', 'b', 'a']);
+  assert.deepEqual(restore(abc, mid).prayers.map(p => p.id), ['c', 'b', 'a']);
+}
+
+// setAudio
+assert.equal(setAudio(s, 'id1', 2).prayers[1].audioParts, 2);
+assert.equal(setAudio(s, 'id1', 2).prayers[0].audioParts, undefined);
 
 // shownText / toggleShowing
 const p = s.prayers[1];
